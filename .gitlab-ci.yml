@@ -1,0 +1,38 @@
+stages:
+  - package
+  
+.debian_package: &debian_package
+  before_script:
+    # Set the env var PACKAGE an VERSION
+    - setup2control
+    - cat control
+    - export PACKAGE=$(yq r control Package)
+    - export VERSION=$(yq r control Version)
+    - pwd
+    - mkdir -p /$PACKAGE-$VERSION/opt/venvs/$PACKAGE
+    - python3 -m venv /$PACKAGE-$VERSION/opt/venvs/$PACKAGE/
+    - echo /$PACKAGE > package.name
+  script:
+    # Move file to venv
+    - mv * /$PACKAGE-$VERSION/opt/venvs/$PACKAGE/
+    - cd /$PACKAGE-$VERSION/opt/venvs/$PACKAGE
+    - /$PACKAGE-$VERSION/opt/venvs/$PACKAGE/bin/python3 setup.py install
+    # Create Package
+    - mkdir -p /$PACKAGE-$VERSION/DEBIAN
+    - mv control /$PACKAGE-$VERSION/DEBIAN/control
+    - chmod -R 0755 /$PACKAGE-$VERSION
+    - dpkg-deb --build /$PACKAGE-$VERSION
+
+packaging:
+  stage: package
+  image: selltom/python-deb:v3
+  <<: *debian_package
+  artifacts:
+    paths:
+    - /$PACKAGE-$VERSION.deb
+    - /package.name
+    expire_in: 1 month
+  only:
+  - develop
+  tags:
+    - docker
