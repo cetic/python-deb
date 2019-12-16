@@ -55,13 +55,7 @@ func main() {
   for _,d := range(debpack){
     var splitvalue = strings.Split(string(d), "=")
     if splitvalue[0] == "debpack" {
-      var depends = strings.Split(string(splitvalue[1]), ",")
-      str := ""
-      for _,deb := range depends {
-
-         str += deleteByte(deleteByte(deleteByte(deb,39),91),93)+" "
-      }
-      _, err = f.WriteString("Depends: "+str+"\n")
+      _, err = f.WriteString("Depends: "+deleteByte(deleteByte(deleteByte(splitvalue[1],39),91),93)+"\n")
       check(err)
     }
   }
