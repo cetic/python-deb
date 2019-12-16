@@ -1,6 +1,8 @@
 stages:
   - package
-  
+  - sending
+  - test
+
 .debian_package: &debian_package
   before_script:
     # Set the env var PACKAGE an VERSION
@@ -9,30 +11,63 @@ stages:
     - export PACKAGE=$(yq r control Package)
     - export VERSION=$(yq r control Version)
     - pwd
-    - mkdir -p /$PACKAGE-$VERSION/opt/venvs/$PACKAGE
-    - python3 -m venv /$PACKAGE-$VERSION/opt/venvs/$PACKAGE/
-    - echo /$PACKAGE > package.name
+    - mkdir -p /opt/venvs/$PACKAGE
+    - python3 -m venv /opt/venvs/$PACKAGE/
   script:
-    # Move file to venv
-    - mv * /$PACKAGE-$VERSION/opt/venvs/$PACKAGE/
-    - cd /$PACKAGE-$VERSION/opt/venvs/$PACKAGE
-    - /$PACKAGE-$VERSION/opt/venvs/$PACKAGE/bin/python3 setup.py install
+    # Install python into a venv
+    - mv * /opt/venvs/$PACKAGE/
+    - cd /opt/venvs/$PACKAGE
+    - /opt/venvs/$PACKAGE/bin/python3 setup.py install
     # Create Package
+    - mv /opt /$PACKAGE-$VERSION/opt
     - mkdir -p /$PACKAGE-$VERSION/DEBIAN
     - mv control /$PACKAGE-$VERSION/DEBIAN/control
     - chmod -R 0755 /$PACKAGE-$VERSION
     - dpkg-deb --build /$PACKAGE-$VERSION
+    - mv /$PACKAGE-$VERSION.deb $CI_PROJECT_DIR/$PACKAGE-$VERSION.deb
+    - echo $PACKAGE > $CI_PROJECT_DIR/packagename
+
 
 packaging:
   stage: package
-  image: selltom/python-deb:v3
+  image: selltom/python-deb:v4
   <<: *debian_package
   artifacts:
     paths:
-    - /$PACKAGE-$VERSION.deb
-    - /package.name
+    - $CI_PROJECT_DIR/*.deb
+    - $CI_PROJECT_DIR/packagename
     expire_in: 1 month
   only:
   - develop
+  tags:
+    - docker
+
+hosting:
+  image: selltom/python-deb:v4
+  stage: sending
+  script:
+    - setup2control
+    - cat control
+    - export PACKAGE=$(yq r control Package)
+    - export VERSION=$(yq r control Version)
+    # Send to APT REPO
+    - "curl -u $NEXUS_USER:$NEXUS_PASS -X POST -H \"Content-Type: multipart/form-data\" --data-binary \"@$PACKAGE-$VERSION.deb\" https://nexus.aisin-vit.be/repository/viaduct-apt-S3/ > result"
+    - "eval \"if [[ -s result ]]; then cat result && exit 1; else echo package loaded; fi\" "
+  only:
+  - develop
+  tags:
+    - docker
+
+installation:
+  image: ubuntu:bionic
+  stage: test
+  script:
+    - apt-get update -y && apt-get install -y apt-transport-https curl gnupg
+    - curl -s https://nexus.aisin-vit.be/repository/viaduct-raw-S3/public.gpg.key | apt-key add -
+    - echo deb https://nexus.aisin-vit.be/repository/viaduct-apt-S3/ bionic main > /etc/apt/sources.list.d/viaduct.list
+    - apt-get update -y
+    - apt-get install -y $(cat packagename)
+  only:
+    - develop
   tags:
     - docker

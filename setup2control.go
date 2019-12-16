@@ -3,6 +3,7 @@ package main
 import(
   "os"
   "strings"
+//  "fmt"
 //  "io/ioutil"
 )
 
@@ -41,8 +42,6 @@ func main() {
   check(err)
   _, err = f.WriteString("Priority: optional\n")
   check(err)
-    _, err = f.WriteString("Depends: python3-pip, python3-venv, systemd, mosquitto\n")
-  check(err)
   //Open setup.py file
   file, err := os.Open("setup.py")
   check(err)
@@ -51,9 +50,23 @@ func main() {
   _, err = file.Read(data)
   check(err)
   //Splits data at each ","
-  splits := strings.Split(string(data), "(")
+  split := strings.Split(string(data), "(")
+  debpack := strings.Split(string(split[0]),"\n")
+  for _,d := range(debpack){
+    var splitvalue = strings.Split(string(d), "=")
+    if splitvalue[0] == "debpack" {
+      var depends = strings.Split(string(splitvalue[1]), ",")
+      str := ""
+      for _,deb := range depends {
+
+         str += deleteByte(deleteByte(deleteByte(deb,39),91),93)+" "
+      }
+      _, err = f.WriteString("Depends: "+str+"\n")
+      check(err)
+    }
+  }
   //Use data on the right of the (
-  splits = strings.Split(string(splits[1]), ",")
+  splits := strings.Split(string(split[1]), ",")
   for _,value := range(splits) {
     //Splits data at each "="
     var splitvalue = strings.Split(string(value), "=")
