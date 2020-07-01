@@ -8,5 +8,6 @@ from ubuntu:bionic
 RUN apt-get update -y && apt-get install -y software-properties-common python3-pip python3-venv python3-setuptools curl
 RUN add-apt-repository ppa:rmescandon/yq
 RUN apt-get -y update && apt-get install -y yq
+RUN pip3 install --upgrade pip
 COPY --from=build /go/setup2control /usr/bin
 cmd bash

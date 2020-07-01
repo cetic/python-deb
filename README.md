@@ -19,7 +19,7 @@ A python project which respect the following architecture :
 
 
 ### How does that work?
-The Gitlab Ci use the [selltom/python-deb:v4](https://hub.docker.com/repository/docker/selltom/python-deb) docker image which contains some required tools:
+The Gitlab Ci use the [selltom/python-deb:v7](https://hub.docker.com/repository/docker/selltom/python-deb) docker image which contains some required tools:
 
 #### 1. setup2control
 This  homemade tool is just a parser/mapper from the `setup.py` file to the `control` file needed to build a debian package.
