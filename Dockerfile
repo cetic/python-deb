@@ -9,5 +9,6 @@ RUN apt-get update -y && apt-get install -y software-properties-common python3-p
 RUN add-apt-repository ppa:rmescandon/yq
 RUN apt-get -y update && apt-get install -y yq
 RUN pip3 install --upgrade pip
+RUN pip3 install --upgrade setuptools 
 COPY --from=build /go/setup2control /usr/bin
 cmd bash

@@ -30,7 +30,7 @@ stages:
 
 packaging:
   stage: package
-  image: selltom/python-deb:v7
+  image: selltom/python-deb:v8
   <<: *debian_package
   artifacts:
     paths:
@@ -43,7 +43,7 @@ packaging:
     - docker
 
 hosting:
-  image: selltom/python-deb:v7
+  image: selltom/python-deb:v8
   stage: sending
   script:
     - setup2control
